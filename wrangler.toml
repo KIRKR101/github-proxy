@@ -1,0 +1,7 @@
+name = "github-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-03-23"
+
+[env.production]
+name = "github-proxy"
+vars = { GITHUB_USERNAME = "Kirkr101" }
