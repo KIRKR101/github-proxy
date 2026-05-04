@@ -6,6 +6,8 @@ const CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
 };
 
+const MIN_YEAR = 2024;
+
 function jsonResponse(data: unknown, status = 200) {
     return Response.json(data, {
         status,
@@ -19,9 +21,16 @@ export default {
             return new Response(null, { status: 204, headers: CORS_HEADERS });
         }
 
+        if (request.method !== "GET") {
+            return new Response("Not Found", {
+                status: 404,
+                headers: CORS_HEADERS,
+            });
+        }
+
         const url = new URL(request.url);
 
-        if (url.pathname !== "/" || request.method !== "GET") {
+        if (url.pathname !== "/") {
             return new Response("Not Found", {
                 status: 404,
                 headers: CORS_HEADERS,
@@ -35,8 +44,24 @@ export default {
             return jsonResponse({ contributions: null });
         }
 
-        const now = new Date();
-        const year = now.getFullYear();
+        const currentYear = new Date().getFullYear();
+        const yearParam = url.searchParams.get("year");
+        let year: number;
+
+        if (yearParam !== null) {
+            year = parseInt(yearParam, 10);
+            if (isNaN(year) || year < MIN_YEAR || year > currentYear) {
+                return jsonResponse(
+                    {
+                        error: `Year must be between ${MIN_YEAR} and ${currentYear}`,
+                    },
+                    400,
+                );
+            }
+        } else {
+            year = currentYear;
+        }
+
         const startDate = `${year}-01-01T00:00:00Z`;
         const endDate = `${year}-12-31T23:59:59Z`;
 
@@ -101,10 +126,12 @@ export default {
                 return jsonResponse({ contributions: null });
             }
 
-            const calendar = result.data.user.contributionsCollection.contributionCalendar;
+            const calendar =
+                result.data.user.contributionsCollection.contributionCalendar;
 
             return jsonResponse({
                 contributions: {
+                    year,
                     totalContributions: calendar.totalContributions,
                     weeks: calendar.weeks,
                 },
